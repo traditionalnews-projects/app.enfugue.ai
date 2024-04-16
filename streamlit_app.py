@@ -1,24 +1,12 @@
 import os
 import subprocess
+import streamlit as st
 
 # This Python script serves as a one-and-done download, update, configure and run command for enfugue.
 # It's able to download enfuge via conda or in portable form.
 
 # Below is the configuration for enfugue. Most values are self-explanatory, but some others need some explanation.
 # See below the configuration for explanation on these values.
-
-# AN IMPORTANT NOTE ABOUT NETWORKING
-#
-# Enfugue runs two servers, one with SSL that only listens to `https://app.enfugue.ai:45554`, and a second without
-# SSL that does not require a domain name be configured.
-# `app.enfugue.ai` is a registered domain name that resolves to `127.0.0.1`, the loopback domain.
-# If you're running enfugue on a local machine with internet access, you should be able to access the secure endpoint this way.
-# If you're running enfugue on a remote machine and want to enable SSL, you will want to change the following:
-# - `server.domain` should be changed to the domain you want to access the interface through _unless_ you're using a proxy. This can be an IP address.
-# - `server.secure` should be set to false _unless_ you also configure an SSL certificate. See the commented-out (#) lines in the configuration below.
-# - If you're additionally using a proxy like ngrok, you should configure `server.cms.path.root` to be the proxied URL. See the commented-out (#) lines below.
-# - Remember, the above only applies if you want to enable SSL. If you don't, leave secure as `false` and `domain` as null, and enfugue will set the
-#   domain in responses as the same as the request came in on.
 
 config = """\
 ---
@@ -76,7 +64,7 @@ with open("config.yml", "w") as f:
 # The default behavior, 'offload,' sends unneeded pipelines to the CPU and promotes active pipelines to the GPU when requested.
 # This usually provides the best balance of speed and memory usage, but can result in heavy overhead on some systems.
 #
-# If this proves too much, or you wish to minimize memory usage, set this to 'unload,'which will always completely unload a pipeline 
+# If this proves too much, or you wish to minimize memory usage, set this to 'unload,'which willalways completely unload a pipeline 
 # and free memory before a different pipeline is used.
 #
 # If you set this to 'null,' _all models will remain in memory_. This is by far thefastest but consumes the most memory, this is only
@@ -150,8 +138,7 @@ def compare_versions(v1, v2):
             return -1
     return 0
 
-def compare_prompt_update(v1, v2, install_update=False):
-    """Compare versions and prompt to download when relevant."""
+def compare_prompt_update(v1, v2, install_update=False):"""Compare versions and prompt to download when relevant."""
     compare = compare_versions(v1, v2)
     if compare < 0:
         if install_update:
@@ -208,15 +195,10 @@ if args.conda:
 elif args.portable:
     install_type = "portable"
 
-# Update logic
 if args.mmpose:
     install_mmpose = True
-if args.no_mmpose:
+elif args.no_mmpose:
     install_mmpose = False
-if args.update:
-    install_update = True
-if args.no_update:
-    install_update = False
 
 if args.update:
     install_update = True
@@ -258,7 +240,7 @@ enfugue_available_portable_version = None
 # Get the current python executable
 python = shutil.which("python3")
 
-# Check if either of the above tactics found enfugue. If so, and it's not disabled, check for updates.
+# Check if either of the above tactics found enfugue. If so, and it's not disabled,check for updates.
 if enfugue or enfugue_server:
     if python and install_update is None:
         # Get installed version from pip
@@ -272,4 +254,30 @@ if enfugue or enfugue_server:
     if enfugue_server and install_update is None:
         # Get versions
         enfugue_available_portable_version = subprocess.run(["curl", "-s", "https://api.github.com/repos/painebenjamin/app.enfugue.ai/releases/latest"], stdout=subprocess.PIPE).stdout.decode().strip()
-        enfugue_available
+        enfugue_available_portable_version = enfugue_available_portable_version.split("tag_name": "")[1].split(",")[0].replace('"', "")
+
+        # Check if the installed version is outdated
+        if compare_prompt_update(enfugue_installed_portable_version, enfugue_available_portable_version):
+            print("Downloading the latest version...")
+            download_portable()
+            enfugue_installed_portable_version = enfugue_available_portable_version
+            print(f"Successfully downloaded version {enfugue_installed_portable_version}.")
+
+# Display the current version
+if enfugue_installed_pip_version:
+    print(f"Enfugue version (pip): {enfugue_installed_pip_version[0]}")
+if enfugue_installed_portable_version:
+    print(f"Enfugue version (portable): {enfugue_installed_portable_version}")
+
+# Create the enfugue.yml file
+if enfugue:
+    with open("enfugue.yml", "w") as f:
+        f.write(config)
+
+# Run enfugue
+if enfugue:
+    subprocess.run([enfugue, "run"])
+elif enfugue_server:
+    subprocess.run([enfugue_server])
+else:
+    print("Enfugue not found.")
