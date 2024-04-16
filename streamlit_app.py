@@ -138,7 +138,8 @@ def compare_versions(v1, v2):
             return -1
     return 0
 
-def compare_prompt_update(v1, v2, install_update=False):"""Compare versions and prompt to download when relevant."""
+def compare_prompt_update(v1, v2, install_update=False):
+    """Compare versions and prompt to download when relevant."""
     compare = compare_versions(v1, v2)
     if compare < 0:
         if install_update:
