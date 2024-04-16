@@ -208,10 +208,15 @@ if args.conda:
 elif args.portable:
     install_type = "portable"
 
+# Update logic
 if args.mmpose:
     install_mmpose = True
-elif args.no_mmpose:
+if args.no_mmpose:
     install_mmpose = False
+if args.update:
+    install_update = True
+if args.no_update:
+    install_update = False
 
 if args.update:
     install_update = True
