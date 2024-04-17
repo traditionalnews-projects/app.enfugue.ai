@@ -282,3 +282,52 @@ elif enfugue_server:
     subprocess.run([enfugue_server])
 else:
     print("Enfugue not found.")
+
+if enfugue or enfugue_server:
+    if python and install_update is None:
+        # Get installed version from pip
+        enfugue_installed_pip_version = subprocess.run([python, "-m", "pip", "freeze"], stdout=subprocess.PIPE).stdout.decode().strip().split("\n")
+        enfugue_installed_pip_version = [line.split("==")[-1] for line in enfugue_installed_pip_version if "enfugue" in line]
+    if enfugue and enfugue_installed_pip_version and install_update is None:
+        # Get available versions from pip
+        enfugue_available_pip_version = subprocess.run([python, "-m", "pip", "install", "enfugue==", "--dry-run"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).stderr.decode().strip().split("\n")
+        enfugue_available_pip_version = [line.split(" ")[-1] for line in enfugue_available_pip_version if "enfugue" in line]
+        enfugue_available_pip_version = [version.split("==")[-1] for version in enfugue_available_pip_version]
+    if enfugue_server and install_update is None:
+        # Get versions
+        enfugue_available_portable_version = subprocess.run(["curl", "-s", "https://api.github.com/repos/painebenjamin/app.enfugue.ai/releases/latest"], stdout=subprocess.PIPE).stdout.decode().strip()
+        enfugue_available_portable_version = enfugue_available_portable_version.split('"tag_name": ')[1].split(",")[0].replace('"', "")
+
+        # Check if the installed version is outdated
+        if compare_prompt_update(enfugue_installed_portable_version, enfugue_available_portable_version):
+            print("Downloading the latest version...")
+            download_portable()
+            enfugue_installed_portable_version = enfugue_available_portable_version
+            print(f"Successfully downloaded version {enfugue_installed_portable_version}.")
+
+# Display the current version
+if enfugue_installed_pip_version:
+    print(f"Enfugue version (pip): {enfugue_installed_pip_version[0]}")
+if enfugue_installed_portable_version:
+    print(f"Enfugue version (portable): {enfugue_installed_portable_version}")
+
+# Create the enfugue.yml file
+if enfugue:
+    with open("enfugue.yml", "w") as f:
+        f.write(config)
+
+# Run enfugue
+if enfugue:
+    subprocess.run([enfugue, "run"])
+elif enfugue_server:
+    subprocess.run([enfugue_server])
+else:
+    print("Enfugue not found.")
+
+# Check if mmpose should be installed
+if args.mmpose is not None:
+    install_mmpose = args.mmpose
+
+if install_mmpose:
+    print("Installing MMPose...")
+    subprocess.run([python, "-m", "pip", "install", "mmpose"])
