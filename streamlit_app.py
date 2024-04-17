@@ -255,7 +255,7 @@ if enfugue or enfugue_server:
     if enfugue_server and install_update is None:
         # Get versions
         enfugue_available_portable_version = subprocess.run(["curl", "-s", "https://api.github.com/repos/painebenjamin/app.enfugue.ai/releases/latest"], stdout=subprocess.PIPE).stdout.decode().strip()
-        enfugue_available_portable_version = enfugue_available_portable_version.split("tag_name": "")[1].split(",")[0].replace('"', "")
+        enfugue_available_portable_version = enfugue_available_portable_version.split('"tag_name": ')[1].split(",")[0].replace('"', "")
 
         # Check if the installed version is outdated
         if compare_prompt_update(enfugue_installed_portable_version, enfugue_available_portable_version):
